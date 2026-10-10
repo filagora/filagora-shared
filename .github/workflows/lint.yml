@@ -1,0 +1,38 @@
+name: lint
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        type: string
+        default: '8.4'
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: mbstring, intl, pdo_sqlite
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Pint (check only)
+        run: vendor/bin/pint --test
+
+      - name: Larastan
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Composer audit
+        run: composer audit

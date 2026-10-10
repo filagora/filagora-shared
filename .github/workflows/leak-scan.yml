@@ -1,0 +1,48 @@
+name: leak-scan
+
+on:
+  workflow_call:
+    inputs:
+      allowed-emails:
+        description: Newline-separated email addresses that may appear in the repo
+        type: string
+        default: security@zen-cart.com
+    secrets:
+      LEAK_PATTERNS:
+        description: Newline-separated extended regexes that must not appear in tracked files
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  patterns:
+    name: Pattern scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch scan script
+        uses: actions/checkout@v4
+        with:
+          repository: zcwilt/forumkit-shared
+          ref: master
+          path: .forumkit-shared
+
+      - name: Scan tracked files
+        env:
+          LEAK_PATTERNS: ${{ secrets.LEAK_PATTERNS }}
+          ALLOWED_EMAILS: ${{ inputs.allowed-emails }}
+        run: bash .forumkit-shared/scripts/leak-scan.sh
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
