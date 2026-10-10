@@ -34,13 +34,17 @@ while IFS= read -r f; do
   [ -n "$hits" ] && report "IPv4 literal in $f (line(s) $hits)"
 done <<< "$files"
 
-# 3. Email addresses not on the allow-list.
+# 3. Email addresses not on the allow-list. Addresses on domains reserved for
+#    documentation and testing (RFC 2606) cannot belong to anyone, so they are fine.
+reserved='@([A-Za-z0-9-]+\.)*(example\.(com|org|net)|[A-Za-z0-9-]+\.test|test|example|invalid|localhost)$'
 printf '%s\n' "${ALLOWED_EMAILS:-}" | sed '/^[[:space:]]*$/d' > /tmp/allowed-emails.txt
 email='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   hits=$(grep -nIEo "$email" -- "$f" | while IFS=: read -r line addr; do
-    grep -qixF -- "$addr" /tmp/allowed-emails.txt || echo "$line"
+    grep -qixF -- "$addr" /tmp/allowed-emails.txt && continue
+    printf '%s' "$addr" | grep -qiE "$reserved" && continue
+    echo "$line"
   done | paste -sd, -)
   [ -n "$hits" ] && report "Non-allow-listed email in $f (line(s) $hits)"
 done <<< "$files"
