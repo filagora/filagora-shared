@@ -1,6 +1,6 @@
-# ForumKit shared workflows
+# Filagora shared workflows
 
-Reusable GitHub Actions workflows (and the scripts they use) for the ForumKit packages.
+Reusable GitHub Actions workflows (and the scripts they use) for the Filagora packages.
 Each package's `ci.yml` calls these, so a fix here reaches every repository.
 
 | Workflow | What it does |
@@ -16,11 +16,11 @@ Each package's `ci.yml` calls these, so a fix here reaches every repository.
 ```yaml
 jobs:
   tests:
-    uses: zcwilt/forumkit-shared/.github/workflows/tests.yml@master
+    uses: filagora/filagora-shared/.github/workflows/tests.yml@master
   lint:
-    uses: zcwilt/forumkit-shared/.github/workflows/lint.yml@master
+    uses: filagora/filagora-shared/.github/workflows/lint.yml@master
   leak-scan:
-    uses: zcwilt/forumkit-shared/.github/workflows/leak-scan.yml@master
+    uses: filagora/filagora-shared/.github/workflows/leak-scan.yml@master
     secrets: inherit
 ```
 

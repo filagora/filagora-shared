@@ -25,15 +25,15 @@ jobs:
       - name: Fetch scan script
         uses: actions/checkout@v4
         with:
-          repository: zcwilt/forumkit-shared
+          repository: filagora/filagora-shared
           ref: master
-          path: .forumkit-shared
+          path: .filagora-shared
 
       - name: Scan tracked files
         env:
           LEAK_PATTERNS: ${{ secrets.LEAK_PATTERNS }}
           ALLOWED_EMAILS: ${{ inputs.allowed-emails }}
-        run: bash .forumkit-shared/scripts/leak-scan.sh
+        run: bash .filagora-shared/scripts/leak-scan.sh
 
   gitleaks:
     name: gitleaks
