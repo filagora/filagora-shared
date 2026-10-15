@@ -59,7 +59,7 @@ jobs:
         if: inputs.meilisearch-version != ''
         run: |
           docker run -d --name meilisearch -p 7700:7700 -e MEILI_MASTER_KEY=testing-master-key -e MEILI_ENV=development getmeili/meilisearch:v${{ inputs.meilisearch-version }}
-          curl -sf --retry 30 --retry-delay 2 --retry-connrefused http://127.0.0.1:7700/health
+          timeout 90 bash -c 'until curl -sf http://127.0.0.1:7700/health; do sleep 2; done'
 
       - name: Install dependencies
         run: |
