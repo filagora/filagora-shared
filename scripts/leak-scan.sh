@@ -26,11 +26,13 @@ else
   echo "::warning::LEAK_PATTERNS is not available (fork or unset); custom pattern scan skipped."
 fi
 
-# 2. Any IPv4 literal, except loopback and unspecified addresses.
+# 2. Any IPv4 literal, except loopback, unspecified and the documentation ranges reserved by
+#    RFC 5737 (which cannot belong to anyone), and except numbers inside an SVG path's `d="..."`
+#    data, which only look like addresses.
 ipv4='\b((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\b'
 while IFS= read -r f; do
   [ -f "$f" ] || continue
-  hits=$(grep -nIEo "$ipv4" -- "$f" | grep -Ev ':(127\.0\.0\.1|0\.0\.0\.0)$' | cut -d: -f1 | paste -sd, -)
+  hits=$(sed -E 's/ d="[^"]*"//g' -- "$f" | grep -nIEo "$ipv4" | grep -Ev ':(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+)$' | cut -d: -f1 | paste -sd, -)
   [ -n "$hits" ] && report "IPv4 literal in $f (line(s) $hits)"
 done <<< "$files"
 
