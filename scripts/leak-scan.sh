@@ -27,12 +27,13 @@ else
 fi
 
 # 2. Any IPv4 literal, except loopback, unspecified and the documentation ranges reserved by
-#    RFC 5737 (which cannot belong to anyone), and except numbers inside an SVG path's `d="..."`
-#    data, which only look like addresses.
+#    RFC 5737 (which cannot belong to anyone), and except numbers that only look like addresses:
+#    those inside an SVG path's `d="..."` data and a four-part version after a slash, as in the
+#    user-agent string `Chrome/127.0.0.0`.
 ipv4='\b((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\b'
 while IFS= read -r f; do
   [ -f "$f" ] || continue
-  hits=$(sed -E 's/ d="[^"]*"//g' -- "$f" | grep -nIEo "$ipv4" | grep -Ev ':(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+)$' | cut -d: -f1 | paste -sd, -)
+  hits=$(sed -E 's/ d="[^"]*"//g; s#/[0-9]+(\.[0-9]+){3}##g' -- "$f" | grep -nIEo "$ipv4" | grep -Ev ':(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+)$' | cut -d: -f1 | paste -sd, -)
   [ -n "$hits" ] && report "IPv4 literal in $f (line(s) $hits)"
 done <<< "$files"
 
@@ -44,6 +45,8 @@ email='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   hits=$(grep -nIEo "$email" -- "$f" | while IFS=: read -r line addr; do
+    # A "+" or "." before the address is punctuation around it (`+claudebot@example.com`), not part of it.
+    addr=${addr#"${addr%%[![:punct:]]*}"}
     grep -qixF -- "$addr" /tmp/allowed-emails.txt && continue
     printf '%s' "$addr" | grep -qiE "$reserved" && continue
     echo "$line"
