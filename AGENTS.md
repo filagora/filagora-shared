@@ -11,7 +11,7 @@ Reusable GitHub Actions workflows and scripts for every Filagora package (public
 | `.github/workflows/tests.yml` | Testbench app + Pest on a real MariaDB service; optional Meilisearch (port 7700, key `testing-master-key`) |
 | `.github/workflows/lint.yml` | `composer validate --strict`, Pint (check only), Larastan, `composer audit` |
 | `.github/workflows/leak-scan.yml` | Runs `scripts/leak-scan.sh` (fetched at run time) and gitleaks |
-| `.github/workflows/release.yml` | On a tag, creates a GitHub release from the matching `CHANGELOG.md` section |
+| `.github/workflows/release.yml` | On a tag, creates a GitHub release from the matching `CHANGELOG.md` section; adds a migrations section when the release changes `database/migrations/` |
 | `.github/workflows/actionlint.yml` | Lints this repo's workflows |
 
 ## Working here
@@ -20,5 +20,6 @@ Reusable GitHub Actions workflows and scripts for every Filagora package (public
 - Run `actionlint` locally if available before pushing.
 - Lessons already paid for: the gitleaks GitHub Action needs a paid licence for organisation accounts, so the workflow runs the pinned gitleaks CLI instead; GitHub Actions artifact billing makes upload-heavy steps expensive, so avoid artifacts unless needed.
 - The leak scan's private pattern list comes from the `LEAK_PATTERNS` secret and is never echoed to logs. Do not print matches or write the patterns anywhere in this public repo. Reserved test/documentation email domains (RFC 2606) are allowed; any other email address or IPv4 literal (except 127.0.0.1 and 0.0.0.0) fails the scan.
+- Package migrations must be expand-then-contract; `docs/migration-safety.md` is the rule and the pre-tag checklist.
 - Never commit secrets. This repository is public.
 - Confirm with the user before changing anything that alters billing, secrets or branch protection.
