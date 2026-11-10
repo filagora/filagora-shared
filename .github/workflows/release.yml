@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract release notes from CHANGELOG.md
         run: |
@@ -24,6 +26,34 @@ jobs:
             echo "::error::No CHANGELOG.md section found for ${version}"
             exit 1
           fi
+
+      - name: Flag database migrations in the release notes
+        # Informational only: never fails the release. See docs/migration-safety.md.
+        run: |
+          previous="$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -z "$previous" ]; then
+            exit 0
+          fi
+          changes="$(git diff --name-status --diff-filter=AMR "$previous" "$GITHUB_REF_NAME" -- database/migrations || true)"
+          if [ -z "$changes" ]; then
+            exit 0
+          fi
+          {
+            echo "### Database migrations"
+            echo
+            echo "This release changes migrations since ${previous}. A rollback of the code does not undo them: the previous release's code must still work against the new schema."
+            echo
+            echo "$changes" | while IFS=$'\t' read -r status path rest; do
+              case "$status" in
+                A) echo "- added \`${path}\`" ;;
+                M) echo "- **MODIFIED an existing migration** \`${path}\` (sites that already ran it will not run it again)" ;;
+                R*) echo "- **RENAMED** \`${path}\` to \`${rest}\` (it may run a second time)" ;;
+              esac
+            done
+            echo
+            cat notes.md
+          } > notes-with-migrations.md
+          mv notes-with-migrations.md notes.md
 
       - name: Create GitHub release
         env:
