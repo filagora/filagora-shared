@@ -32,8 +32,10 @@ addresses on the domains reserved for documentation and testing (RFC 2606, for e
 
 The docs site builds each package's page from its `README.md`, so `lint.yml` fails unless the
 README's `##` headings are exactly: What it provides, Requirements, Install, Configuration,
-Extending, Testing, Local development (DDEV), Licence. Anything else goes under *What it
-provides* as a `###` heading. `scripts/check-readme-layout.sh` does the check; the package
+Extending, Testing, Local development (DDEV), Licence. Under *What it provides* the `###`
+headings are exactly: Overview, Tables, Commands, Events, Access, Using it (keep a heading and say
+so in one line when a package has none of it). Anything else goes under *Using it* as a `####`
+heading. `scripts/check-readme-layout.sh` does the check; the package
 skeleton's README shows the layout.
 
 ## Migrations
