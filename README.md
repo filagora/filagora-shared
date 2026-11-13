@@ -6,7 +6,7 @@ Each package's `ci.yml` calls these, so a fix here reaches every repository.
 | Workflow | What it does |
 | --- | --- |
 | `tests.yml` | Installs the package into a Testbench app and runs Pest on a real MariaDB service. Inputs: `php-version`, `laravel`, `testbench`, `prefer`, `mariadb-version`, `meilisearch-version` (optional; starts Meilisearch on port 7700 with key `testing-master-key`, exported as `MEILISEARCH_HOST` and `MEILISEARCH_KEY`) |
-| `lint.yml` | `composer validate --strict`, Pint (check only), Larastan, `composer audit` |
+| `lint.yml` | The README layout check (see below), `composer validate --strict`, Pint (check only), Larastan, `composer audit` |
 | `leak-scan.yml` | Scans tracked files for private details (patterns from the `LEAK_PATTERNS` secret, any IPv4 literal, any email address not on the allow-list) and runs gitleaks |
 | `release.yml` | On a tag, creates a GitHub release from the matching `CHANGELOG.md` section, with a **Database migrations** section on top when the release adds or changes migrations (see [docs/migration-safety.md](docs/migration-safety.md)) |
 | `actionlint.yml` | Lints the workflows in this repository on every push and pull request |
@@ -27,6 +27,14 @@ jobs:
 `leak-scan.yml` fetches `scripts/leak-scan.sh` from this repository at run time. Email
 addresses on the domains reserved for documentation and testing (RFC 2606, for example
 `example.com` or `*.test`) are ignored, because they cannot belong to anyone.
+
+## README layout
+
+The docs site builds each package's page from its `README.md`, so `lint.yml` fails unless the
+README's `##` headings are exactly: What it provides, Requirements, Install, Configuration,
+Extending, Testing, Local development (DDEV), Licence. Anything else goes under *What it
+provides* as a `###` heading. `scripts/check-readme-layout.sh` does the check; the package
+skeleton's README shows the layout.
 
 ## Migrations
 

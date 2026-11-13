@@ -22,6 +22,18 @@ jobs:
           extensions: mbstring, intl, pdo_sqlite
           coverage: none
 
+      - name: Fetch shared scripts
+        uses: actions/checkout@v4
+        with:
+          repository: filagora/filagora-shared
+          ref: master
+          path: .filagora-shared
+
+      - name: README layout
+        env:
+          README_EXTRA_SECTIONS: ${{ github.repository == 'filagora/filagora-package-skeleton' && 'Creating a package from this template' || '' }}
+        run: bash .filagora-shared/scripts/check-readme-layout.sh
+
       - name: Validate composer.json
         run: composer validate --strict
 
