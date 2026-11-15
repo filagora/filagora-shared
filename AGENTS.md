@@ -11,7 +11,8 @@ Reusable GitHub Actions workflows and scripts for every Filagora package (public
 | `.github/workflows/tests.yml` | Testbench app + Pest on a real MariaDB service; optional Meilisearch (port 7700, key `testing-master-key`) |
 | `.github/workflows/lint.yml` | `composer validate --strict`, Pint (check only), Larastan, `composer audit` |
 | `.github/workflows/leak-scan.yml` | Runs `scripts/leak-scan.sh` (fetched at run time) and gitleaks |
-| `.github/workflows/release.yml` | On a tag, creates a GitHub release from the matching `CHANGELOG.md` section; adds a migrations section when the release changes `database/migrations/` |
+| `.github/workflows/release.yml` | On a tag (or when `tag.yml` passes its optional `tag` input), creates a GitHub release from the matching `CHANGELOG.md` section; adds a migrations section when the release changes `database/migrations/` |
+| `.github/workflows/tag.yml` | On push to `master`, tags the version in the newest `## [x.y.z]` changelog heading if that tag does not exist (refuses a lower version or a `dev` constraint in `composer.json`), then calls `release.yml` in the same run, since a tag pushed with the default token starts no other workflow |
 | `.github/workflows/actionlint.yml` | Lints this repo's workflows |
 
 ## Working here

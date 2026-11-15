@@ -1,0 +1,68 @@
+name: tag
+
+# Tags a release when a "Prepare x.y.z" PR merges: the newest `## [x.y.z]`
+# heading in CHANGELOG.md names the version. If that tag already exists this
+# does nothing, so ordinary merges are untouched. A tag pushed with the default
+# token starts no other workflow, so the release is made by calling release.yml
+# in the same run.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      created: ${{ steps.tag.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag the version named by the newest changelog heading
+        id: tag
+        run: |
+          echo "created=false" >> "$GITHUB_OUTPUT"
+
+          version="$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+          if [ -z "$version" ]; then
+            echo "No released version heading in CHANGELOG.md; nothing to tag."
+            exit 0
+          fi
+          tag="v${version}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "${tag} already exists; nothing to do."
+            exit 0
+          fi
+
+          latest="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1)"
+          if [ -n "$latest" ] && [ "$(printf '%s\n%s\n' "${latest#v}" "$version" | sort -V | tail -n1)" != "$version" ]; then
+            echo "::error::${tag} is lower than the latest tag ${latest}; refusing to tag."
+            exit 1
+          fi
+
+          if jq -e '[(.require // {}), (."require-dev" // {})] | map(to_entries[].value) | any(test("(^|[ |,])dev-|@dev"))' composer.json >/dev/null; then
+            echo "::error::composer.json has a dev constraint; refusing to tag ${tag}."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" -m "${tag}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${tag}"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: tag
+    if: needs.tag.outputs.created == 'true'
+    permissions:
+      contents: write
+    uses: filagora/filagora-shared/.github/workflows/release.yml@master
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
