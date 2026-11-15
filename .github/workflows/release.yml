@@ -2,9 +2,18 @@ name: release
 
 on:
   workflow_call:
+    inputs:
+      tag:
+        description: Tag to release. Defaults to the tag that triggered the run; tag.yml passes it when calling this directly.
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   release:
@@ -12,11 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Extract release notes from CHANGELOG.md
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           awk -v v="$version" '
             $0 ~ "^## \\[?" v "\\]?" { found = 1; next }
             found && /^## / { exit }
@@ -30,11 +40,11 @@ jobs:
       - name: Flag database migrations in the release notes
         # Informational only: never fails the release. See docs/migration-safety.md.
         run: |
-          previous="$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          previous="$(git describe --tags --abbrev=0 --match 'v*' "${RELEASE_TAG}^" 2>/dev/null || true)"
           if [ -z "$previous" ]; then
             exit 0
           fi
-          changes="$(git diff --name-status --diff-filter=AMR "$previous" "$GITHUB_REF_NAME" -- database/migrations || true)"
+          changes="$(git diff --name-status --diff-filter=AMR "$previous" "$RELEASE_TAG" -- database/migrations || true)"
           if [ -z "$changes" ]; then
             exit 0
           fi
@@ -58,4 +68,4 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md
+        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file notes.md
